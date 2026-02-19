@@ -122,6 +122,270 @@ This document is the central technical reference for the project. It is split in
 - **Hybrid**: **State pattern** (game states) + **Singleton managers** + **Interface-based dependency injection** (managers depend on each other via interfaces, resolved in `Start()` with `*.Instance`).
 - **Adventure Creator (AC)** is used for player, camera, dialogue (Conversation/DialogueOption), menus, cursor. The game enables/disables AC systems per state and switches input via a custom **Input Manager** keyed by `EGameState`.
 
+### 🔎 Added Documentation — System Layering
+
+The Indekos architecture follows a **two-layer design** that separates core infrastructure from feature implementation:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        INDEKOS — SYSTEM LAYERING                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │                    CORE LAYER (indekos/script/core/)                 │  │
+│  │                                                                       │  │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌────────────┐  │  │
+│  │  │   Pattern   │  │  Managers   │  │   Additional│  │   Editor   │  │  │
+│  │  │  (State,    │  │ (Singletons)│  │  (Trigger,  │  │  (PlayMode │  │  │
+│  │  │  Singleton, │  │             │  │  Encryption)│  │   Save,    │  │  │
+│  │  │  Interface) │  │             │  │             │  │   Editor)  │  │  │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘  └────────────┘  │  │
+│  │                                                                       │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                      │                                      │
+│                                      ▼                                      │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │                   FEATURE LAYER (indekos/script/system/)             │  │
+│  │                                                                       │  │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌────────────┐  │  │
+│  │  │    Quest    │  │    Audio    │  │    Save     │  │    UI      │  │  │
+│  │  │             │  │             │  │             │  │            │  │  │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘  └────────────┘  │  │
+│  │                                                                       │  │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌────────────┐  │  │
+│  │  │   MiniGame  │  │    NPC      │  │   Loading   │  │   Scene    │  │  │
+│  │  │ (Guitar,    │  │             │  │             │  │            │  │  │
+│  │  │  Mingsut)   │  │             │  │             │  │            │  │  │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘  └────────────┘  │  │
+│  │                                                                       │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │                    DATA LAYER (indekos/data/)                         │  │
+│  │                                                                       │  │
+│  │  ScriptableObjects: Quest, BGM, SFX, Tarot, Inventory, Beatmap,     │  │
+│  │  SubState Data, Dialogue Assets, Animation Controllers               │  │
+│  │                                                                       │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Core Layer (`indekos/script/core/`)
+The Core Layer contains **infrastructure code** that other systems depend upon:
+
+- **Pattern** (`core/pattern/`): State machine interfaces (`stateinterface`), singleton base class (`singleton<T>`), manager interfaces (`*ManagerInterface`), and input bridge (`InputBridge`).
+- **Managers** (`core/*.cs`): Singleton managers that hold global game state and provide services (GameManager, LevelManager, UIManager, QuestManager, etc.).
+- **Additional** (`core/additional/`): Utility classes like TriggerManager hierarchy and Encryption.
+- **Editor** (`script/editor/`): Editor-only tools for development (PlayModeSave, BeatmapAnalyzerEditor, etc.).
+
+#### Feature Layer (`indekos/script/system/`)
+The Feature Layer contains **gameplay systems** that implement specific functionality:
+
+- **Quest**: Quest definition and controller
+- **Audio**: BGM and SFX management
+- **Save**: Save/Load data structures
+- **UI**: UI binding and button systems
+- **MiniGame**: Guitar, Mingsut, EndlessRun, QTE
+- **NPC**: NPC crowd management
+- **Loading**: Loading screen controller
+- **Scene**: Day/Ambient/NPC controllers
+- **Beat**: Beatmap analysis for rhythm gameplay
+
+#### Data Layer (`indekos/data/`)
+The Data Layer contains **ScriptableObject assets** that drive the game:
+
+- **Quest Data**: QuestListDay1.asset, QuestListDay2.asset
+- **Audio Data**: BGM.asset, SFX.asset
+- **Dialogue**: Story, Study, ChitChat conversation assets
+- **SubState**: GameplayStateScriptableObject, StudyStateScriptableObject
+- **Configuration**: InputMapping, Lighting settings
+
+### 🔎 Added Documentation — Manager Dependency Map
+
+All managers in Indekos follow a **hub-and-spoke dependency model** with GameManager as the central hub:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    MANAGER DEPENDENCY HIERARCHY                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│                           ┌──────────────┐                                │
+│                           │  GameManager  │ ◄── Central Hub                │
+│                           │   (State,    │     (Singleton<T>)             │
+│                           │   Options,    │                                │
+│                           │   Global Data)│                                │
+│                           └───────┬────────┘                                │
+│                                   │                                         │
+│         ┌──────────┬──────────────┼──────────────┬──────────┐             │
+│         │          │              │              │          │             │
+│         ▼          ▼              ▼              ▼          ▼             │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐       │
+│  │LevelMgr  │ │QuestMgr  │ │UIManager │ │InputMgr  │ │AudioMgr  │       │
+│  │          │ │          │ │          │ │          │ │          │       │
+│  │-Scene    │ │-Quests   │ │-Menus    │ │-InputMap │ │-BGM/SFX  │       │
+│  │-Loading  │ │-Format   │ │-Date/Obj │ │-Actions  │ │-Guitar   │       │
+│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └──────────┘ └──────────┘       │
+│       │            │            │                                         │
+│       │      ┌─────┴─────┐      │                                         │
+│       │      │           │      │                                         │
+│       ▼      ▼           ▼      ▼                                         │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐                                 │
+│  │Component│ │StoryMgr  │ │DateTime  │                                 │
+│  │Manager  │ │          │ │Manager   │                                 │
+│  └────┬─────┘ └────┬─────┘ └──────────┘                                 │
+│       │            │                                                     │
+│       │      ┌─────┴─────┐                                               │
+│       │      │           │                                               │
+│       ▼      ▼           ▼                                               │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐                   │
+│  │Character│ │StudyMgr  │ │ChitChat  │ │SaveLoad  │                   │
+│  │Manager  │ │          │ │Manager   │ │Manager   │                   │
+│  └─────────┘ └──────────┘ └──────────┘ └──────────┘                   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Dependency Rules
+
+1. **GameManager** is the central hub — almost every system depends on it
+2. **GameState** depends on InputManager for input activation
+3. **LevelManager** depends on GameManager, UIManager, QuestManager, ComponentManager
+4. **QuestManager** depends on GameManager, LevelManager, UIManager, AudioManager, DateTimeManager, StoryManager
+5. **UIManager** depends on GameManager, InputManager, LevelManager, QuestManager, DateTimeManager
+6. **InputManager** has no dependencies (only references the InputMapping asset)
+7. **All managers** resolve their dependencies in `Start()` via `*.Instance` using interfaces
+
+### 🔎 Added Documentation — Runtime Execution Flow
+
+The complete boot sequence from Unity startup to game loop:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     INITIALIZATION SEQUENCE                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  1. UNITY BOOT                                                              │
+│     └─► Persistent Scene Loads                                              │
+│          └─► singleton<T>.Awake() executes (-100 execution order)           │
+│               ├─► GameManager.Awake()                                       │
+│               │    • Initialize resolutions                                  │
+│               │    • Setup map_list                                          │
+│               │    • InsertTarot(), InsertInventory()                       │
+│               │    • InitDialogueLog()                                       │
+│               │    • ACAction(false)                                         │
+│               │                                                               │
+│               └─► Other Managers Awake() (LevelManager, UIManager, etc.)     │
+│                                                                             │
+│  2. START PHASE                                                             │
+│     └─► Manager.Start() executes                                            │
+│          ├─► GameManager.Start()                                            │
+│          │    • Resolve LevelManager, AudioManager, SaveLoadManager,         │
+│          │      InputManager interfaces                                      │
+│          │    • EnableInput()                                               │
+│          │    • Check SaveLoadManager.CheckLoad("save1"..."save4")         │
+│          │    • Determine first scene:                                       │
+│          │       - If save exists → mainmenu_scene                          │
+│          │       - Otherwise → opening_scene                                │
+│          │                                                               │
+│          └─► Other Managers Start() (resolve dependencies)                  │
+│                                                                             │
+│  3. SCENE LOAD                                                              │
+│     └─► AsyncLoadLevel(firstScene)                                          │
+│          ├─► LevelManager.LoadLevel(...)                                     │
+│          │    • b_is_load = true                                            │
+│          │    • DestroyCurrentComponentSceneTemp()                          │
+│          │    • ShowUI("loading")                                           │
+│          │    • ChangeState(eNone)                                           │
+│          │    • StartCoroutine(WaitLoading)                                 │
+│          │                                                                   │
+│          └─► WaitLoading Coroutine:                                          │
+│               ├─► WaitForSeconds(wait_a)                                    │
+│               ├─► UnloadSceneAsync(current_level)                          │
+│               ├─► LoadScene additive (new level)                            │
+│               ├─► WaitForSeconds(wait_b)                                    │
+│               ├─► ChangeState(targetState)                                  │
+│               ├─► If IncludePlayer → teleport player                        │
+│               ├─► EnterQuest()                                             │
+│               ├─► HideUI("loading")                                         │
+│               ├─► PlayBGM()                                                 │
+│               ├─► DayController.UpdateLight()                               │
+│               ├─► AmbientController.UpdateAmbient()                         │
+│               └─► NpcController.UpdateTotalNPC()                            │
+│                                                                             │
+│  4. STATE INITIALIZATION                                                   │
+│     └─► GameState.Init(level)                                               │
+│          ├─► Create all state instances                                      │
+│          │    • OpeningState, MainMenuState, SelectCharacterState            │
+│          │    • GameplayState, PauseState, MapState                         │
+│          │    • GuitarState, GuitarFinalState                               │
+│          │    • MingsutState, EndlessRunState                               │
+│          │    • StudyState, HpState, FindPartPcState                        │
+│          │    • RakitPcState, FreelanceState                                │
+│          │    • WartegState, TarotState, BookState                         │
+│          │    • NextDayState, CutsceneState, MinimarketState                │
+│          │                                                                   │
+│          ├─► Determine initial state                                         │
+│          │    • opening_scene → OpeningState                                │
+│          │    • Otherwise → MainMenuState                                   │
+│          │                                                                   │
+│          ├─► InputManager.InputActivate(initialState)                      │
+│          └─► currentstate.Enter()                                           │
+│                                                                             │
+│  5. RUNTIME LOOP                                                            │
+│     └─► Every Frame:                                                        │
+│          ├─► GameManager.Update()                                           │
+│          │    └─► gamestate.Update()                                        │
+│          │         └─► currentstate.Update()                                │
+│          │              ├─► SubUpdate() [if substate exists]                │
+│          │              ├─► Read InputManager                                │
+│          │              ├─► Check GetTriggerFor()                           │
+│          │              └─► Call Managers or ChangeState                    │
+│          │                                                                   │
+│     └─► Input Handling:                                                      │
+│          ├─► Player presses interact key (E)                                │
+│          │    └─► Current state InputInteract()                            │
+│          │         └─► Process trigger → Manager calls                     │
+│          │                                                               │
+│     └─► State Transition:                                                   │
+│          ├─► ChangeState requested                                          │
+│          │    ├─► currentstate.Exit()                                       │
+│          │    ├─► Save previous state                                       │
+│          │    ├─► Activate new state                                        │
+│          │    ├─► InputManager.InputActivate(newState)                    │
+│          │    └─► newstate.Enter()                                          │
+│          │                                                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 🔎 Added Documentation — Interface-Based Dependency Injection
+
+> **🔎 Added Documentation**
+
+All managers use **interface-based dependency resolution** to avoid hard circular references and to allow for mock/stub implementations. Here's how it works:
+
+```
+Manager A (e.g., QuestManager)
+│
+├─ Awake() — singleton pattern inherited from singleton<T>
+│
+└─ Start() — resolves interfaces to actual instances
+    │
+    ├─ game_manager = GameManager.Instance (as GameManagerInterface)
+    ├─ ui_manager = UIManager.Instance (as UiManagerInterface)
+    ├─ level_manager = LevelManager.Instance (as LevelManagerInterface)
+    └─ ... (all other manager references)
+```
+
+**Why this pattern?**
+
+- **Decoupling**: A manager depends on the interface, not the concrete class, allowing the concrete implementation to change without breaking the manager.
+- **Testability**: A unit test can inject a mock that implements the interface, so a manager can be tested in isolation.
+- **Flexibility**: New managers can be added or swapped without recompiling dependent code.
+- **Null safety**: If a manager is missing from the scene, `Instance` returns null, so the using code must check.
+
+**Interface definitions** live in `script/core/pattern/interface manager/` and are named `XxxManagerInterface`. Each manager implements its interface, e.g., `QuestManager : singleton<QuestManager>, QuestManagerInterface`.
+
 ### Communication
 
 - **Singleton access** — All core managers inherit `singleton<T>`; access via `XxxManager.Instance`.
@@ -531,6 +795,849 @@ LevelMgr  QuestMgr    UIManager  InputMgr   GameState
 - **do_quest_list** — List of completed quest step IDs; used for conditions and save.
 - **datetime** — In-game time (date + ETime: Morning/Afternoon/Evening/Night).
 - **LifetimeComponents / CharacterComponents** — Spawn rules by quest index and day; ComponentManager/CharacterManager spawn/despawn accordingly.
+
+---
+
+## 🔎 Added Documentation
+
+### Deep Dive: Interface-Based Dependency Injection
+
+> **🔎 Added Documentation**
+
+All managers use **interface-based dependency resolution** to avoid hard circular references and to allow for mock/stub implementations. Here's how it works:
+
+```
+Manager A (e.g., QuestManager)
+│
+├─ Awake() — singleton pattern inherited from singleton<T>
+│
+└─ Start() — resolves interfaces to actual instances
+    │
+    ├─ game_manager = GameManager.Instance (as GameManagerInterface)
+    ├─ ui_manager = UIManager.Instance (as UiManagerInterface)
+    ├─ level_manager = LevelManager.Instance (as LevelManagerInterface)
+    └─ ... (all other manager references)
+```
+
+**Why this pattern?**
+
+- **Decoupling**: A manager depends on the interface, not the concrete class, allowing the concrete implementation to change without breaking the manager.
+- **Testability**: A unit test can inject a mock that implements the interface, so a manager can be tested in isolation.
+- **Flexibility**: New managers can be added or swapped without recompiling dependent code.
+- **Null safety**: If a manager is missing from the scene, `Instance` returns null, so the using code must check.
+
+**Interface definitions** live in `script/core/pattern/interface manager/` and are named `XxxManagerInterface`. Each manager implements its interface, e.g., `QuestManager : singleton<QuestManager>, QuestManagerInterface`.
+
+---
+
+### Deep Dive: Quest System — Enter / Exit / Format Flow
+
+> **🔎 Added Documentation**
+
+The quest system is the spine of Indekos gameplay. Each quest has four key fields:
+
+```csharp
+[System.Serializable]
+public class QuestContent
+{
+    public string Enter;           // Condition to advance to this quest
+    public string questGoal;       // UI text shown in the objective panel
+    public datetime time;          // In-game time (date + morning/afternoon/evening/night)
+    public string format;          // Spawn directives: triggers, NPCs, components, cameras
+    public string Exit;            // What to do when leaving this quest (state, minigame, or UI)
+}
+```
+
+#### Enter Conditions (when does a quest advance?)
+
+```csharp
+if (mainQuest.content[indexMainQuest].Enter == "none")
+    return; // Skip; no condition
+
+if (mainQuest.content[indexMainQuest].Enter == "skip")
+{
+    NextQuest(); // Automatically advance
+    return;
+}
+
+if (game_manager.GetGameState().GetCurrentEnum().ToString() == mainQuest.content[indexMainQuest].Enter)
+    NextQuest(); // Advance when entering a state (e.g., "eGuitar")
+
+if (level_manager.GetCurrentLevel() == mainQuest.content[indexMainQuest].Enter)
+    NextQuest(); // Advance when entering a scene (e.g., "kos_scene")
+
+if (GetIndexMainQuest().ToString() == mainQuest.content[indexMainQuest].Enter)
+    NextQuest(); // Advance when quest index matches (numeric trigger)
+```
+
+#### Format String Parsing (what gets spawned?)
+
+The `Format()` method parses a format string and spawns corresponding prefabs. Examples:
+
+- `trigger-input_pos_rot_action` — Spawns an input trigger at (pos, rot) with action string.
+- `npc-doni_pos_rot` — Spawns Doni NPC at (pos, rot).
+- `part-pc_name_pos_rot` — Spawns a PC part for Rakit PC minigame.
+- `map_btn-kos_location_name` — Adds a map button for location "kos".
+- `cutscene-name` — Loads cutscene by name.
+
+**Pseudo-code** (simplified):
+
+```csharp
+public void Format()
+{
+    string format = mainQuest.content[indexMainQuest].format;
+    // Parse format string and switch on type:
+    // - trigger-* → SpawnTrigger(name, pos, rot, action)
+    // - npc-* → CharacterManager.SpawnCharacter(name, pos, rot)
+    // - part-pc_* → ComponentManager.SetTempComponent(...)
+    // - map_btn-* → UIManager.AddMapButton(name, location)
+    // - cutscene-* → LevelManager.LoadLevel(scene, ...)
+}
+```
+
+#### Exit Actions (what happens when we leave?)
+
+```csharp
+public void ExitQuest()
+{
+    string exit = mainQuest.content[indexMainQuest].Exit;
+    switch (exit)
+    {
+        case "none":
+            break; // Do nothing
+        case "minigame-mingsut":
+            game_manager.GetGameState().ChangeState(EGameState.eMingsut);
+            break;
+        case "hp":
+            game_manager.GetGameState().ChangeState(EGameState.eHP);
+            break;
+        case "guitar-final":
+            game_manager.GetGameState().ChangeState(EGameState.eGuitarfinal);
+            break;
+        // ... and so on for each minigame or state
+    }
+}
+```
+
+#### Day-Based Quest Reset
+
+When the player advances to a new day:
+
+```csharp
+public void QuestNexDay()
+{
+    do_quest_list.Clear(); // Reset completed quest IDs
+    
+    // Copy the quest list for the new day from the day-specific Quest ScriptableObject
+    Quest sourceQuest = quest_list[datetime_manager.GetCurrentDay()].quest;
+    mainQuest = ScriptableObject.CreateInstance<Quest>();
+    mainQuest.content = new List<QuestContent>();
+    
+    // Deep copy each quest content so modifications don't affect the source asset
+    foreach (QuestContent item in sourceQuest.content)
+    {
+        QuestContent newItem = new QuestContent { ... };
+        mainQuest.content.Add(newItem);
+    }
+    
+    indexMainQuest = 0; // Start at quest 0 of the day
+}
+```
+
+This ensures each day has its own copy of quests, and changes made during one day don't persist to the next.
+
+---
+
+### Deep Dive: Save / Load System — Serialization & Encryption
+
+> **🔎 Added Documentation**
+
+The save system uses **JSON serialization** with optional **encryption** to persist game state. SaveData is a serializable struct containing all relevant game state.
+
+#### SaveData Structure
+
+```csharp
+[System.Serializable]
+public class SaveData : ISerializationCallbackReceiver
+{
+    public Vector3 playerPos;                // Player position in the scene
+    public string level;                     // Current scene name
+    public int indexDay;                     // Day index (0 = Day 1, etc.)
+    public int indexQuest;                   // Current quest index
+    public int indexStory;                   // Story dialogue index
+    public int indexStudy;                   // Study dialogue index
+    public datetime time;                    // In-game time (morning/afternoon/evening/night)
+    public int money;                        // Player's money
+    
+    public List<TarotContent> tarot;         // Collected tarot cards
+    public List<InventoryContent> inventory; // Collected items
+    public List<string> do_quest_list;       // Completed quest IDs
+    public List<int> index_ignore;           // Story indices to skip
+    
+    // Serialized wrappers for dictionaries (Unity can't serialize dicts directly)
+    [NonSerialized]
+    public Dictionary<int, List<QuestContent>> quest; // Quests per day
+    
+    [NonSerialized]
+    public Dictionary<string, List<string>> dialoue_log; // Dialogue history per NPC
+    
+    public List<QuestDictWrapper> quest_Serialized;
+    public List<DialogueDictWrapper> dialoue_log_Serialized;
+    
+    public List<string> map_list;            // Visited locations
+}
+```
+
+#### Serialization Flow
+
+1. **Collect data from all managers:**
+   ```csharp
+   public void Save(string slot)
+   {
+       savedata.playerPos = AC.KickStarter.player.transform.position;
+       savedata.level = level_manager.GetCurrentLevel();
+       savedata.indexQuest = quest_manager.GetIndexMainQuest();
+       savedata.indexStory = story_manager.GetIndexStory();
+       savedata.time = datetime_manager.GetCurrentTime();
+       // ... collect from all other managers
+   }
+   ```
+
+2. **Serialize to JSON** (using `JsonUtility.ToJson` or a third-party serializer):
+   ```csharp
+   string json = JsonUtility.ToJson(savedata);
+   ```
+
+3. **Encrypt** (optional, using AES or similar):
+   ```csharp
+   string encrypted = Encryption.Encrypt(json, key);
+   ```
+
+4. **Write to file:**
+   ```csharp
+   string path = SaveFileName(slot); // e.g., Application.persistentDataPath/saves/v1.0.0/save1
+   File.WriteAllText(path, encrypted);
+   ```
+
+#### Deserialization Flow
+
+1. **Read from file:**
+   ```csharp
+   string encrypted = File.ReadAllText(path);
+   ```
+
+2. **Decrypt:**
+   ```csharp
+   string json = Encryption.Decrypt(encrypted, key);
+   ```
+
+3. **Deserialize from JSON:**
+   ```csharp
+   SaveData savedata = JsonUtility.FromJson<SaveData>(json);
+   ```
+
+4. **Distribute data back to managers:**
+   ```csharp
+   public void Load(string slot)
+   {
+       // ... read and decrypt ...
+       game_manager.SetMoney(savedata.money);
+       level_manager.SetCurrentLevel(savedata.level);
+       quest_manager.SetIndexMainQuest(savedata.indexQuest);
+       // ... restore to all managers
+   }
+   ```
+
+#### Dictionary Serialization Trick
+
+Unity's serializer can't handle `Dictionary<K, V>` directly, so we use wrapper classes:
+
+```csharp
+[System.Serializable]
+public class QuestDictWrapper
+{
+    public int dayIndex;
+    public List<QuestContent> questList;
+}
+```
+
+`ISerializationCallbackReceiver.OnBeforeSerialize` converts the dict to a list of wrappers; `OnAfterDeserialize` converts back:
+
+```csharp
+public void OnBeforeSerialize()
+{
+    quest_Serialized.Clear();
+    foreach (var kvp in quest)
+    {
+        quest_Serialized.Add(new QuestDictWrapper { dayIndex = kvp.Key, questList = kvp.Value });
+    }
+}
+
+public void OnAfterDeserialize()
+{
+    quest = new Dictionary<int, List<QuestContent>>();
+    foreach (var wrapper in quest_Serialized)
+    {
+        quest[wrapper.dayIndex] = wrapper.questList;
+    }
+}
+```
+
+---
+
+### Deep Dive: State Machine & Substate System
+
+> **🔎 Added Documentation**
+
+The state machine in Indekos uses a **composite pattern**: each major game state (Gameplay, Pause, HP) can optionally have **substates** that vary by in-game day.
+
+#### GameState Container
+
+```csharp
+public class GameState
+{
+    private Dictionary<EGameState, stateinterface> states; // All state instances
+    private stateinterface currentstate;                   // Currently active state
+    private EGameState currentEnum, previousEnum, nextEnum; // State tracking
+    
+    public void Init(string level)
+    {
+        // Create one instance of each state and register in dictionary
+        states[EGameState.eGameplay] = new GameplayState();
+        states[EGameState.ePause] = new PauseState();
+        states[EGameState.eMap] = new MapState();
+        // ... create all states ...
+        
+        // Determine the initial state based on the level
+        currentstate = (level == "opening_scene") ? states[EGameState.eOpening] : states[EGameState.eMainMenu];
+        currentEnum = /* ... */;
+        currentstate.Enter();
+    }
+    
+    public void ChangeState(EGameState nextState)
+    {
+        // Graceful transition: save previous, exit current, enter next
+        previousEnum = currentEnum;
+        currentstate.Exit();        // Cleanup
+        currentstate = states[nextState];
+        currentEnum = nextState;
+        input_manager.InputActivate(nextState); // Activate input for new state
+        currentstate.Enter();       // Initialize
+    }
+    
+    public void Update()
+    {
+        if (currentstate != null)
+            currentstate.Update(); // Forward update to current state
+    }
+}
+```
+
+#### Substate System (for per-day variations)
+
+Some states like **GameplayState** have different behavior on Day 1 vs Day 2. Instead of duplicating the entire state, we use substates:
+
+```csharp
+public class GameplayState : stateinterface
+{
+    private List<SubstateInterface> substates = new List<SubstateInterface>();
+    
+    public GameplayState()
+    {
+        // Create one substate per day
+        substates.Add(new GameplaySubstateDay1(this));
+        substates.Add(new GameplaySubstateDay2(this));
+        // ... Day 3, Day 4, etc.
+    }
+    
+    public void Enter()
+    {
+        int dayIndex = datetime_manager.GetCurrentDay(); // 0 = Day 1, 1 = Day 2, etc.
+        substates[dayIndex].SubEnter(); // Initialize the substate for this day
+        // ... rest of Enter logic
+    }
+    
+    public void Update()
+    {
+        int dayIndex = datetime_manager.GetCurrentDay();
+        substates[dayIndex].SubUpdate(); // Forward update to substate
+    }
+    
+    public void Exit()
+    {
+        int dayIndex = datetime_manager.GetCurrentDay();
+        substates[dayIndex].SubExit(); // Cleanup the substate
+    }
+}
+```
+
+Each substate can override Enter/Update/Exit to vary behavior:
+
+```csharp
+public class GameplaySubstateDay1 : SubstateInterface
+{
+    public void SubEnter()
+    {
+        // Day 1 specific setup (e.g., tutorial messages, special camera)
+    }
+    
+    public void SubUpdate()
+    {
+        // Day 1 specific logic
+    }
+    
+    public void SubExit()
+    {
+        // Day 1 cleanup
+    }
+}
+
+public class GameplaySubstateDay2 : SubstateInterface
+{
+    // Different implementation for Day 2
+}
+```
+
+#### State Initialization Flow
+
+```
+GameManager.Start() → AsyncLoadLevel(scene) → On Complete:
+                       ├─ LevelManager.SetCurrentLevel(scene)
+                       ├─ AudioManager.PlayBGM()
+                       ├─ new GameState() → GameState.Init(scene)
+                       │  ├─ Create all state instances
+                       │  ├─ Determine initial state (Opening or MainMenu)
+                       │  ├─ InputManager.InputActivate(initialState)
+                       │  └─ currentstate.Enter()
+                       └─ Hide loading UI
+```
+
+---
+
+### Deep Dive: Adventure Creator Integration & Sync
+
+> **🔎 Added Documentation**
+
+Indekos uses **Adventure Creator (AC)** as a sub-system for player control, camera, dialogue, and menus. The game state machine and AC state are **loosely coupled** through event-based coordination.
+
+#### AC GameState vs Indekos EGameState
+
+AC has its own `GameState` enum (Normal, Cutscene, Paused, DialogOptions). Indekos has `EGameState` (eGameplay, ePause, eMap, etc.). They are **not the same**:
+
+- **AC.GameState.Normal**: Gameplay is running, player can move.
+- **AC.GameState.Cutscene**: A cut scene or action list is running; player is locked.
+- **AC.GameState.Paused**: Game is paused.
+- **AC.GameState.DialogOptions**: A conversation menu is open.
+
+**Indekos EGameState** is a finer-grained control layer that decides *how* gameplay runs (map, minigame, pause menu, HP UI, etc.).
+
+#### Input System Binding per State
+
+When a state changes, `InputManager.InputActivate(EGameState)` activates a different **Unity Input System map**:
+
+```csharp
+public void InputActivate(EGameState state)
+{
+    DisableAllMaps();
+    
+    switch (state)
+    {
+        case EGameState.eGameplay:
+            input.gameplay.Enable(); // WASD, E to interact, Tab for map, P for pause
+            break;
+        case EGameState.ePause:
+            input.pause.Enable(); // Up/Down to navigate, Enter to select
+            break;
+        case EGameState.eMap:
+            input.map.Enable(); // WASD to navigate map, click to load location
+            break;
+        case EGameState.eGuitar:
+            input.guitar.Enable(); // Specific guitar minigame keys
+            break;
+        // ... and so on
+    }
+}
+```
+
+Each input map has context-specific actions. This ensures the player's input is correctly interpreted in each state.
+
+#### AC Events & Callbacks
+
+AC's `EventManager` dispatches events that Indekos can listen to:
+
+```csharp
+// Example: When a dialogue line starts, update speaker-based UI scaling
+AC.EventManager.OnStartSpeech_Alt += (speaker) =>
+{
+    UIManager.ScaleTextByCharacter(speaker); // Make NPC text appear in different sizes
+};
+
+// Example: When a conversation option is clicked
+AC.EventManager.OnClickConversation += (conversation, optionID) =>
+{
+    StudyManager.NotifyAnswerSelected(optionID);
+};
+```
+
+#### Camera Handling
+
+AC manages the player's camera, but Indekos can attach custom cameras per location:
+
+```csharp
+private void CameraSpawn()
+{
+    switch (level_manager.GetCurrentLevel())
+    {
+        case "kos_scene":
+            SpawnCamera("camera-kos"); // Third-person camera in boarding house
+            game_manager.SetCameraKos(UpdateCamera); // Callback to update camera aim
+            UpdateCamera();
+            break;
+        case "minimarket_scene":
+            SpawnCamera("camera-minimarket-look"); // Different camera for minimarket
+            UpdateCamera();
+            break;
+    }
+}
+
+private void UpdateCamera()
+{
+    // Smoothly update camera position/rotation based on player input or time
+}
+```
+
+When exiting GameplayState, cameras are destroyed (except for certain transitions like Map → Gameplay where the camera persists):
+
+```csharp
+private void DestroyCameraOnExit()
+{
+    if (!game_manager.GetCurretCam()) return;
+    
+    // List of states where cameras persist (do not destroy)
+    List<EGameState> cameraExceptions = new()
+    {
+        EGameState.eMap, EGameState.eBook, EGameState.eHP, EGameState.eMingsut, EGameState.eGuitar
+    };
+    
+    if (cameraExceptions.Contains(game_manager.GetGameState().GetNextEnum()))
+        return; // Don't destroy; next state will reuse it
+    
+    // Otherwise, destroy the camera
+    Destroy(game_manager.GetCurretCam().gameObject);
+    game_manager.SetCurretCam(null);
+}
+```
+
+#### AC Disable/Enable Pattern
+
+Indekos can enable or disable AC systems per state:
+
+```csharp
+public class GameplayState : stateinterface
+{
+    public void Enter()
+    {
+        game_manager.EnableInput(); // Allow AC player movement
+        ui_manager.EnableUiGameplay(); // Show gameplay UI
+        Cursor.lockState = CursorLockMode.Locked; // Lock cursor for gameplay
+    }
+    
+    public void Exit()
+    {
+        game_manager.DisableInput(); // Disable AC movement during transition
+        ui_manager.DisableUiGameplay(); // Hide gameplay UI
+    }
+}
+
+public class MapState : stateinterface
+{
+    public void Enter()
+    {
+        game_manager.DisableInput(); // Player can't move during map
+        Cursor.lockState = CursorLockMode.Confined; // Unlock cursor for map UI
+        Cursor.visible = true;
+    }
+}
+```
+
+---
+
+### Deep Dive: Trigger System & Interact Flow
+
+> **🔎 Added Documentation**
+
+Triggers are the primary mechanism for interactive world objects (NPCs, doors, map exits, items, etc.). When the player touches a trigger, it sets a global string that the current state reads and acts upon.
+
+#### Trigger Lifecycle
+
+```csharp
+public class TriggerManager : MonoBehaviour
+{
+    public string TriggerFor; // e.g., "level-kos", "story-quest", "chitchat-doni"
+    
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.tag != "Player") return; // Only react to player collision
+        if (game_manager.GetTriggerFor() != "") return; // Already in a trigger
+        
+        game_manager.SetTriggerFor(TriggerFor); // Set global trigger string
+        Enter(); // Virtual; subclasses override
+        
+        // Show interact prompt UI
+        if (TriggerFor.Contains("camera-")) return; // Don't show prompt for camera triggers
+        // ShowInteractPrompt();
+    }
+    
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.tag != "Player") return;
+        
+        game_manager.SetTriggerFor(""); // Clear trigger
+        Exit(); // Virtual; subclasses override
+        // HideInteractPrompt();
+    }
+    
+    protected virtual void Enter() { }
+    protected virtual void Exit() { }
+}
+```
+
+#### Trigger Subclasses
+
+Different trigger types handle their own logic:
+
+```csharp
+// Example: Door trigger
+public class TriggerDoor : TriggerManager
+{
+    protected override void Enter()
+    {
+        // Door-specific: show "door" prompt
+    }
+}
+
+// Example: NPC chitchat trigger
+public class TriggerInputChitChat : TriggerManager
+{
+    protected override void Enter()
+    {
+        // Set TriggerFor = "chitchat-npc"
+    }
+}
+
+// Example: Story dialogue trigger
+public class TriggerDialogueNPC : TriggerManager
+{
+    protected override void Enter()
+    {
+        // Set TriggerFor = "story-quest"
+    }
+}
+```
+
+#### Interact Flow (GameplayState handles interaction)
+
+When the player presses the interact key (E):
+
+```csharp
+private void InputInteract()
+{
+    if (!input_manager.GetInteractInput()) return;
+    
+    string trigger = game_manager.GetTriggerFor();
+    
+    switch (trigger)
+    {
+        case "chitchat-npc":
+            chitchat_manager.ResumeStory(); // Start optional NPC dialogue
+            break;
+        case "next-day":
+            game_manager.GetGameState().ChangeState(EGameState.eNextDay);
+            break;
+        case "map":
+            game_manager.GetGameState().ChangeState(EGameState.eMap);
+            break;
+        case "level-kos":
+            level_manager.LoadLevel("kos_scene", pos, rot, ELoadType.eIncludePlayer, ..., EGameState.eGameplay);
+            break;
+        case "story-quest":
+            story_manager.ResumeStory(EStoryType.eIncludeQuest); // Story dialogue advances quest
+            break;
+        // ... handle other triggers
+    }
+}
+```
+
+#### Quest Format Spawning Triggers
+
+When a quest's `Format()` is called, it can spawn triggers dynamically:
+
+```csharp
+private void SpawnTrigger(string name, Vector3 pos, Quaternion rot, string action)
+{
+    Transform obj = component_manager.GetComponentScene(name); // Get trigger prefab
+    TriggerManager trigger = GameObject.Instantiate(obj, pos, rot).GetComponent<TriggerManager>();
+    trigger.TriggerFor = action; // Set the action string (e.g., "level-kos")
+    component_manager.SetTempComponent(trigger.transform); // Track for cleanup
+}
+```
+
+---
+
+### Deep Dive: Async & Await Patterns in States
+
+> **🔎 Added Documentation**
+
+Indekos makes heavy use of **async/await** and **Task** for non-blocking operations like scene loading, camera transitions, and UI animations.
+
+#### Example: Scene Loading with Async
+
+```csharp
+public void LoadLevel(string namelevel, Vector3 location, float rotation, ELoadType type, ELoadingType loadingType, EGameState state)
+{
+    b_is_load = true;
+    component_manager.DestroyCurrentComponentSceneTemp();
+    ui_manager.ShowUI("loading"); // Show loading screen
+    game_manager.GetGameState().ChangeState(EGameState.eNone); // Neutral state during load
+    
+    StartCoroutine(WaitLoading(namelevel, location, rotation, type, state));
+}
+
+private IEnumerator WaitLoading(string namelevel, Vector3 location, float rotation, ELoadType type, EGameState state)
+{
+    yield return new WaitForSeconds(wait_a); // 2.5s: unload current scene
+    
+    // Unload current scene and load new one
+    SceneManager.UnloadSceneAsync(current_level);
+    SceneManager.LoadScene(namelevel, LoadSceneMode.Additive);
+    
+    yield return new WaitForSeconds(wait_b); // 0.5s: let load complete
+    
+    // Restore game state
+    game_manager.GetGameState().ChangeState(state); // Resume gameplay
+    level_manager.SetCurrentLevel(namelevel);
+    
+    if (type == ELoadType.eIncludePlayer)
+    {
+        AC.KickStarter.player.transform.position = location;
+        AC.KickStarter.player.SetRotation(Quaternion.Euler(0, rotation, 0));
+    }
+    
+    ui_manager.HideUI("loading");
+    audio_manager.PlayBGM();
+    quest_manager.EnterQuest(); // Check quest conditions in new scene
+}
+```
+
+#### Example: Minigame Async Logic (Mingsut)
+
+```csharp
+public async Task BeginChoice()
+{
+    cts = new CancellationTokenSource();
+    
+    // Async loop: each round of the game
+    while (!b_is_end)
+    {
+        ShowChoices(); // Display gajah/semut/manusia buttons
+        choice_timer = time_to_choose; // Countdown timer
+        
+        while (!player_has_chosen && choice_timer > 0)
+        {
+            choice_timer -= Time.deltaTime;
+            await Task.Delay(16); // ~60 FPS
+        }
+        
+        if (choice_timer <= 0)
+            choice_player = RandomChoice(); // Auto-choose if timeout
+        
+        ExecuteRound(); // Resolve round: player vs enemy
+        await Task.Delay(1000); // 1s delay to show result
+        
+        // Check win/lose condition
+        if (health_player <= 0 || health_enemy <= 0)
+            b_is_end = true;
+    }
+    
+    ShowStats(); // Final stats screen
+    ExitState(); // Return to gameplay
+}
+```
+
+The key is using `await Task.Delay()` instead of blocking coroutines, which allows cancellation via `CancellationToken` and cleaner code structure.
+
+---
+
+### 🛠 Refactor Suggestions
+
+> **🛠 Refactor Suggestion: Quest Format Parsing Complexity**
+
+The `QuestManager.Format()` method has grown large with many string parsing branches (trigger-, npc-, part-pc-, map-, cutscene-, etc.). Consider:
+
+1. **Introduce a strategy pattern**: Create `IQuestFormatHandler` interface with subclasses like `TriggerFormatHandler`, `NPCFormatHandler`, `ComponentFormatHandler`.
+2. **Use a factory**: `FormatHandlerFactory.GetHandler(formatType)` routes to the appropriate handler.
+3. **Benefits**: Easier to add new format types without touching the core QuestManager; better testability.
+
+**Current (procedural):**
+```csharp
+if (formatString.StartsWith("trigger-")) { /* big switch */ }
+if (formatString.StartsWith("npc-")) { /* big switch */ }
+// ... etc
+```
+
+**Proposed (strategy):**
+```csharp
+var handler = FormatHandlerFactory.GetHandler(formatType);
+handler.Execute(formatString, parameters);
+```
+
+> **🛠 Refactor Suggestion: InputManager Input Map Proliferation**
+
+The InputManager has grown to include many per-state input maps (gameplay, pause, guitar, guitar-final, map, study, etc.). Consider:
+
+1. **Dynamic input context switching**: Instead of hardcoding each state's input map, use a component-based approach where states register their input actions.
+2. **Centralized input action repository**: `InputActionRegistry.Register(EGameState, List<InputAction>)`.
+3. **Benefits**: New states can define their own inputs without modifying InputManager; easier to debug input conflicts.
+
+> **🛠 Refactor Suggestion: Camera Management Complexity**
+
+Camera spawning and destruction logic in `GameplayState` is getting complex (CameraSpawn checks level name, DestroyCameraOnExit has exceptions list). Consider:
+
+1. **Camera provider pattern**: Each level has a `LevelCameraProvider` component that knows what camera to spawn.
+2. **Cleaner exit logic**: Remove the exceptions list; instead, pass "persist camera" flag to ChangeState.
+3. **Benefits**: Level designers can define camera behavior per-scene without touching state code.
+
+> **🛠 Refactor Suggestion: Dialogue System Integration with AC**
+
+Currently, StoryManager, StudyManager, and ChitChatManager all hook into AC conversations independently. Consider:
+
+1. **Unified dialogue controller**: Create an `IndekosDialogueManager` that coordinates all three dialogue types.
+2. **Avoid multiple listeners**: Currently, multiple managers subscribe to `EventManager.OnStartSpeech_Alt`. Consolidate into one listener that dispatches to the appropriate handler.
+3. **Benefits**: Easier to debug dialogue flow; clearer who owns each dialogue type; avoid race conditions between listeners.
+
+---
+
+### 🛠 Technical Debt & Known Limitations
+
+> **🛠 Refactor Suggestion: SaveData Serialization Overhead**
+
+Saving/loading converts dictionaries to wrapper lists, which is verbose. Consider:
+
+1. **Use a third-party serializer** (e.g., Newtonsoft.Json) that natively handles dictionaries.
+2. **Or, flatten the data**: Store quests as a flat list with a `dayIndex` field instead of `Dictionary<int, List>`.
+3. **Benefit**: Smaller save files; faster serialization; easier to read in debugging tools.
+
+> **🛠 Refactor Suggestion: Performance — Quest Format Parsing**
+
+If a quest has a large format string with many components, parsing it every time the quest is entered is slow. Consider:
+
+1. **Cache parsed format data**: Once Format() is called and prefabs are spawned, don't reparse unless the format string changes.
+2. **Lazy evaluation**: Only spawn what the quest actually needs (e.g., if the format includes a camera but the player already has one, don't spawn).
+3. **Benefit**: Faster quest transitions on devices with slower CPUs.
+
+---
+
+## Full ASCII Architecture Diagram (Reference)
 
 ---
 
