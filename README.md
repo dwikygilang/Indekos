@@ -13,47 +13,76 @@ This document is the central technical reference for the project. It is split in
 ## 📑 Full Table of Contents
 
 ### Part I — Indekos Game Project
-| Link | Description |
-|------|-------------|
-| [Badges](#badges) | Engine, architecture, project type |
-| [Navigation](#-navigation) | Quick jump links |
-| [Project Overview](#-project-overview) | What the game does |
-| [Architecture](#-architecture-overview) | State + managers, data flow |
-| [System Map](#-system-map) | Visual hierarchy |
-| [Core Systems](#-core-systems) | Game state, managers, quest, dialogue, save, trigger, minigames |
-| [Folder Structure](#-folder-structure) | indekos/ layout |
-| [Important Classes](#-important-classes) | Class table |
-| [Game Flow](#-game-flow-lifecycle) | Boot, init, runtime |
-| [Execution Chain](#-runtime-execution-chain) | Per-frame and event chains |
-| [State Machine](#-state-machine-visualization) | State graph |
-| [Dependency Map](#-dependency-map) | Who depends on whom |
-| [Configuration](#-configuration-guide) | Inspector, ScriptableObjects |
-| [Safe Modification](#-safe-modification-guide) | Do not touch / extension points |
-| [Glossary](#-glossary) | Project terms |
+
+| Section | Description | Priority |
+|---------|-------------|----------|
+| **[Badges](#badges)** | Engine, architecture, project type, input system, dialogue engine | 🔴 Essential |
+| **[Navigation](#-navigation)** | Quick jump links to all major sections | 🟡 Reference |
+| **[Project Overview](#-project-overview)** | Game concept, main pillars, day-based progression | 🔴 Essential |
+| **[Architecture Overview](#-architecture-overview)** | State + Singleton + Interface pattern, system layering, manager dependencies | 🔴 Essential |
+| **[System Map](#-system-map)** | Visual hierarchy of all game systems | 🔴 Essential |
+| **[Core Systems](#-core-systems)** | Game state, managers, quest, dialogue, save, trigger, minigames detailed breakdown | 🔴 Essential |
+| **[Folder Structure](#-folder-structure)** | Complete indekos/ directory layout with purpose table | 🟠 Important |
+| **[Important Classes](#-important-classes)** | Class responsibility table with key methods/variables | 🔴 Essential |
+| **[Game Flow Lifecycle](#-game-flow-lifecycle)** | Boot → initialization → runtime → scene change → quest flow | 🔴 Essential |
+| **[Runtime Execution Chain](#-runtime-execution-chain)** | Per-frame updates, event chains, level loading | 🔴 Essential |
+| **[State Machine Visualization](#-state-machine-visualization)** | Complete state graph with all transitions | 🔴 Essential |
+| **[Dependency Map](#-dependency-map)** | Who depends on whom - manager relationships | 🟠 Important |
+| **[Configuration Guide](#-configuration-guide)** | Inspector variables, ScriptableObjects, paths | 🟠 Important |
+| **[Safe Modification Guide](#-safe-modification-guide)** | DO NOT modify vs safe extension points | 🔴 Essential |
+| **[Glossary](#-glossary)** | Project-specific terms and definitions | 🟡 Reference |
+
+#### 🔎 Added Documentation Sections (Part I)
+
+| Section | Description | New |
+|---------|-------------|-----|
+| **[Deep Dive: Interface-Based Dependency Injection](#deep-dive-interface-based-dependency-injection)** | How managers use interfaces for decoupling | ✅ |
+| **[Deep Dive: Quest System](#deep-dive-quest-system--enter--exit--format-flow)** | Enter/Exit/Format flow with code examples | ✅ |
+| **[Deep Dive: Save/Load System](#deep-dive-save--load-system--serialization--encryption)** | Serialization, encryption, save data structure | ✅ |
+| **[Deep Dive: State Machine & Substate System](#deep-dive-state-machine--substate-system)** | Composite pattern, per-day variations | ✅ |
+| **[Deep Dive: Adventure Creator Integration](#deep-dive-adventure-creator-integration--sync)** | AC vs EGameState, events, camera handling | ✅ |
+| **[Deep Dive: Trigger System & Interact Flow](#deep-dive-trigger-system--interact-flow)** | Complete trigger lifecycle with code | ✅ |
+| **[Deep Dive: Async & Await Patterns](#deep-dive-async--await-patterns-in-states)** | Scene loading, minigame async logic | ✅ |
+| **[🎮 Minigame System Architecture Deep Dive](#-minigame-system-architecture-deep-dive)** | All 9+ minigames state pattern, lifecycle | ✅ NEW |
+| **[📊 Data-Driven Architecture Deep Dive](#-data-driven-architecture-deep-dive)** | ScriptableObject hierarchy, data bindings | ✅ NEW |
+| **[⚡ Performance & Scalability Analysis](#-performance--scalability-analysis)** | Bottlenecks, risks, recommendations | ✅ NEW |
+| **[🕐 Advanced Time & Day System Deep Dive](#-advanced-time--day-system-deep-dive)** | DateTimeManager, day progression flow | ✅ NEW |
+| **[🔎 Complete Example: Extending Indekos](#-complete-example-extending-indekos-with-a-new-story-arc)** | Step-by-step story arc creation | ✅ NEW |
+| **[🛠️ Testing & Debugging Guide](#-testing--debugging-guide)** | CheatManager, quest debugging, scene testing | ✅ NEW |
+| **[📋 Refactoring Roadmap](#-refactoring-roadmap-for-production)** | Event bus, DSL, pooling improvements | ✅ NEW |
+| **[🎓 New Developer Onboarding Guide](#-new-developer-onboarding-guide)** | How to add quests, minigames, NPCs, save data, UI | ✅ |
 
 ### Part II — StudioDocumentation System
-| Link | Description |
-|------|-------------|
-| [SD 1. Title & Overview](#1-title--overview) | What is StudioDocumentation, who should use it |
-| [SD 2. Key Features](#2-key-features-very-detailed) | Feature-by-feature deep dive |
-| [SD 3. System Architecture](#3-system-architecture) | Assembly separation, asset pipeline |
-| [SD 4. Folder Structure](#4-folder-structure-breakdown) | Every folder and file explained |
-| [SD 5. Data Model](#5-data-model-deep-explanation) | DocumentationData, ScriptInfo, etc. |
-| [SD 6. Script Indexing](#6-script-indexing-engine) | How indexing works |
-| [SD 7. Auto Generation](#7-auto-documentation-generation) | When it runs, rebuild process |
-| [SD 8. Editor UI](#8-editor-ui-system) | Renderer, tabs, search |
-| [SD 9. Error Handling](#9-error-handling--stability) | Why creation can fail, defensive design |
-| [SD 10. Extending](#10-extending-the-system) | Custom categories, tabs, integrations |
-| [SD 11. Security](#11-security--sensitive-files) | SensitiveFile, classification |
-| [SD 12. Performance](#12-performance-considerations) | Reflection, caching, lazy load |
-| [SD 13. Troubleshooting](#13-troubleshooting-guide-very-detailed) | Errors and fixes |
-| [SD 14. FAQ](#14-faq-section) | 85 Q&A |
-| [SD 15. Best Practices](#15-best-practices) | Architecture, naming |
-| [SD 16. Contribution](#16-contribution-guide) | How to add features |
-| [SD 17. Versioning](#17-versioning-strategy) | Semantic versioning |
-| [SD 18. Roadmap](#18-roadmap) | Planned features |
-| [SD 19. Example Workflow](#19-example-workflow) | Step-by-step usage |
-| [SD 20. Studio Usage](#20-internal-studio-usage-scenario) | Onboarding, auditing |
+
+| Section | Description | Complexity |
+|---------|-------------|------------|
+| **[SD 1. Title & Overview](#1-title--overview)** | What is StudioDocumentation, who should use it | Basic |
+| **[SD 2. Key Features](#2-key-features-very-detailed)** | 12 key features with what/why/how | Intermediate |
+| **[SD 3. System Architecture](#3-system-architecture)** | Assembly separation, asset pipeline, domain reload | Advanced |
+| **[SD 4. Folder Structure](#4-folder-structure-breakdown)** | Every folder and file explained | Intermediate |
+| **[SD 5. Data Model](#5-data-model-deep-explanation)** | DocumentationData, ScriptInfo, serialization | Advanced |
+| **[SD 6. Script Indexing](#6-script-indexing-engine)** | How scripts are discovered and parsed | Advanced |
+| **[SD 7. Auto Generation](#7-auto-documentation-generation)** | When it runs, rebuild process | Intermediate |
+| **[SD 8. Editor UI](#8-editor-ui-system)** | Renderer, tabs, search | Intermediate |
+| **[SD 9. Error Handling](#9-error-handling--stability)** | Why creation can fail, defensive design | Advanced |
+| **[SD 10. Extending](#10-extending-the-system)** | Custom categories, tabs, integrations | Advanced |
+| **[SD 11. Security](#11-security--sensitive-files)** | SensitiveFile, classification | Intermediate |
+| **[SD 12. Performance](#12-performance-considerations)** | Reflection, caching, lazy load | Advanced |
+| **[SD 13. Troubleshooting](#13-troubleshooting-guide-very-detailed)** | Errors and fixes | Intermediate |
+| **[SD 14. FAQ](#14-faq-section)** | 85 Q&A | Reference |
+| **[SD 15. Best Practices](#15-best-practices)** | Architecture, naming conventions | Intermediate |
+| **[SD 16. Contribution](#16-contribution-guide)** | How to add features | Intermediate |
+| **[SD 17. Versioning](#17-versioning-strategy)** | Semantic versioning, migration | Advanced |
+| **[SD 18. Roadmap](#18-roadmap)** | Planned features | Reference |
+| **[SD 19. Example Workflow](#19-example-workflow)** | Step-by-step usage guides | Basic |
+| **[SD 20. Studio Usage](#20-internal-studio-usage-scenario)** | Onboarding, auditing, compliance | Reference |
+
+### Legend
+
+- 🔴 **Essential** — Must read for understanding the project
+- 🟠 **Important** — Needed for active development
+- 🟡 **Reference** — Look up when needed
+- ✅ **NEW** — Recently added documentation
 
 ---
 
@@ -122,7 +151,7 @@ This document is the central technical reference for the project. It is split in
 - **Hybrid**: **State pattern** (game states) + **Singleton managers** + **Interface-based dependency injection** (managers depend on each other via interfaces, resolved in `Start()` with `*.Instance`).
 - **Adventure Creator (AC)** is used for player, camera, dialogue (Conversation/DialogueOption), menus, cursor. The game enables/disables AC systems per state and switches input via a custom **Input Manager** keyed by `EGameState`.
 
-### 🔎 Added Documentation — System Layering
+### — System Layering
 
 The Indekos architecture follows a **two-layer design** that separates core infrastructure from feature implementation:
 
@@ -201,7 +230,7 @@ The Data Layer contains **ScriptableObject assets** that drive the game:
 - **SubState**: GameplayStateScriptableObject, StudyStateScriptableObject
 - **Configuration**: InputMapping, Lighting settings
 
-### 🔎 Added Documentation — Manager Dependency Map
+### — Manager Dependency Map
 
 All managers in Indekos follow a **hub-and-spoke dependency model** with GameManager as the central hub:
 
@@ -256,7 +285,7 @@ All managers in Indekos follow a **hub-and-spoke dependency model** with GameMan
 6. **InputManager** has no dependencies (only references the InputMapping asset)
 7. **All managers** resolve their dependencies in `Start()` via `*.Instance` using interfaces
 
-### 🔎 Added Documentation — Runtime Execution Flow
+### — Runtime Execution Flow
 
 The complete boot sequence from Unity startup to game loop:
 
@@ -358,9 +387,8 @@ The complete boot sequence from Unity startup to game loop:
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 🔎 Added Documentation — Interface-Based Dependency Injection
+### — Interface-Based Dependency Injection
 
-> **🔎 Added Documentation**
 
 All managers use **interface-based dependency resolution** to avoid hard circular references and to allow for mock/stub implementations. Here's how it works:
 
@@ -798,11 +826,9 @@ LevelMgr  QuestMgr    UIManager  InputMgr   GameState
 
 ---
 
-## 🔎 Added Documentation
 
 ### Deep Dive: Interface-Based Dependency Injection
 
-> **🔎 Added Documentation**
 
 All managers use **interface-based dependency resolution** to avoid hard circular references and to allow for mock/stub implementations. Here's how it works:
 
@@ -832,7 +858,6 @@ Manager A (e.g., QuestManager)
 
 ### Deep Dive: Quest System — Enter / Exit / Format Flow
 
-> **🔎 Added Documentation**
 
 The quest system is the spine of Indekos gameplay. Each quest has four key fields:
 
@@ -950,7 +975,6 @@ This ensures each day has its own copy of quests, and changes made during one da
 
 ### Deep Dive: Save / Load System — Serialization & Encryption
 
-> **🔎 Added Documentation**
 
 The save system uses **JSON serialization** with optional **encryption** to persist game state. SaveData is a serializable struct containing all relevant game state.
 
@@ -1087,7 +1111,6 @@ public void OnAfterDeserialize()
 
 ### Deep Dive: State Machine & Substate System
 
-> **🔎 Added Documentation**
 
 The state machine in Indekos uses a **composite pattern**: each major game state (Gameplay, Pause, HP) can optionally have **substates** that vary by in-game day.
 
@@ -1216,7 +1239,6 @@ GameManager.Start() → AsyncLoadLevel(scene) → On Complete:
 
 ### Deep Dive: Adventure Creator Integration & Sync
 
-> **🔎 Added Documentation**
 
 Indekos uses **Adventure Creator (AC)** as a sub-system for player control, camera, dialogue, and menus. The game state machine and AC state are **loosely coupled** through event-based coordination.
 
@@ -1364,7 +1386,6 @@ public class MapState : stateinterface
 
 ### Deep Dive: Trigger System & Interact Flow
 
-> **🔎 Added Documentation**
 
 Triggers are the primary mechanism for interactive world objects (NPCs, doors, map exits, items, etc.). When the player touches a trigger, it sets a global string that the current state reads and acts upon.
 
@@ -1486,7 +1507,6 @@ private void SpawnTrigger(string name, Vector3 pos, Quaternion rot, string actio
 
 ### Deep Dive: Async & Await Patterns in States
 
-> **🔎 Added Documentation**
 
 Indekos makes heavy use of **async/await** and **Task** for non-blocking operations like scene loading, camera transitions, and UI animations.
 
@@ -1637,9 +1657,828 @@ If a quest has a large format string with many components, parsing it every time
 
 ---
 
+## 🎮 Minigame System Architecture Deep Dive
+
+
+Indekos includes 9+ minigames, each implemented as a separate **State** with its own Enter/Update/Exit lifecycle. Understanding the minigame pattern is critical for extending the system.
+
+### Minigame State Pattern Overview
+
+Every minigame follows this pattern:
+
+```csharp
+public class MinigameTitleState : stateinterface
+{
+    // 1. Resolve dependencies
+    private GameManagerInterface game_manager;
+    private UIManagerInterface ui_manager;
+    private InputManagerInterface input_manager;
+    private AudioManagerInterface audio_manager;
+    
+    // 2. Game state variables
+    private int score = 0;
+    private bool isGameActive = false;
+    private float timer = 0f;
+    
+    // 3. Enter: Setup and initialization
+    public void Enter()
+    {
+        game_manager = GameManager.Instance;
+        ui_manager = UIManager.Instance;
+        input_manager = InputManager.Instance;
+        audio_manager = AudioManager.Instance;
+        
+        isGameActive = true;
+        timer = 0f;
+        score = 0;
+        
+        // Show minigame UI
+        ui_manager.ShowUI("minigame_title");
+        
+        // Play minigame music
+        audio_manager.PlayBGM("minigame_title_bgm");
+    }
+    
+    // 4. Update: Core game loop
+    public void Update()
+    {
+        if (!isGameActive) return;
+        
+        timer += Time.deltaTime;
+        
+        // Handle player input
+        HandleInput();
+        
+        // Update game state
+        UpdateGameState();
+        
+        // Check win/lose conditions
+        if (CheckWinCondition())
+        {
+            ExitMinigameSuccess();
+        }
+        else if (CheckLoseCondition())
+        {
+            ExitMinigameFailure();
+        }
+    }
+    
+    // 5. Exit: Cleanup and state transition
+    public void Exit()
+    {
+        isGameActive = false;
+        ui_manager.HideUI("minigame_title");
+        audio_manager.StopBGM();
+    }
+    
+    // Helper methods
+    private void HandleInput() { /* ... */ }
+    private void UpdateGameState() { /* ... */ }
+    private bool CheckWinCondition() { /* ... */ }
+    private bool CheckLoseCondition() { /* ... */ }
+    
+    private void ExitMinigameSuccess()
+    {
+        isGameActive = false;
+        quest_manager.NextQuest(); // Advance quest
+    }
+    
+    private void ExitMinigameFailure()
+    {
+        isGameActive = false;
+        game_manager.GetGameState().ChangeState(EGameState.eGameplay); // Return to gameplay
+    }
+}
+```
+
+### Minigame Lifecycle
+
+```
+Quest.Exit = "minigame-title"
+       ↓
+QuestManager.ExitQuest() detects exit action
+       ↓
+ChangeState(EGameState.eTitle)  // Switch to minigame state
+       ↓
+TitleState.Enter() → Setup UI, BGM, variables
+       ↓
+GameManager.Update() → TitleState.Update() [every frame]
+       ↓
+Player input & game logic
+       ↓
+Win/Lose condition met
+       ↓
+ExitMinigameSuccess() or ExitMinigameFailure()
+       ↓
+If success: NextQuest()
+If failure: ChangeState(eGameplay)
+```
+
+### Individual Minigame Documentation
+
+#### 🎸 Guitar Minigame (GuitarState, GuitarFinalState)
+
+**Purpose**: Learn guitar chords; practice sequences; final exam.
+
+**States**:
+- `EGameState.eGuitar` — Practice mode (learn chords)
+- `EGameState.eGuitarFinal` — Exam mode (play a complete song)
+
+**Data**: `indekos/data/audio/DataGuitar.asset` contains chord clips.
+
+**Exit Paths**:
+- `"minigame-guitar"` → GuitarState
+- `"minigame-guitarf"` → GuitarFinalState (final exam)
+
+**Example Quest Format**:
+```
+format = "minigame-guitar"
+Exit = "minigame-guitarf"  // After passing practice, go to final exam
+```
+
+#### 🐘 Mingsut Minigame (MingsutState)
+
+**Purpose**: Gajah/Semut/Manusia (Elephant/Ant/Human) — like rock-paper-scissors.
+
+**State**: `EGameState.eMingsut`
+
+**Win Condition**: Player wins 3 out of 5 rounds.
+
+**UI**: Shows player choice vs NPC choice; score display.
+
+**Exit Paths**:
+- Win: `NextQuest()`
+- Lose: `ChangeState(eGameplay)`
+
+#### 🏃 Endless Run (EndlessRunState)
+
+**Purpose**: Endless runner minigame; survive as long as possible.
+
+**State**: `EGameState.eEndlessRun`
+
+**Mechanics**: Avoid obstacles; collect score items.
+
+**End Condition**: Player hits an obstacle or reaches time limit.
+
+**Data**: Obstacle patterns from ScriptableObject.
+
+#### 🖥️ Find Part PC & Rakit PC (FindPartPcState, RakitPcState)
+
+**Purpose**:
+- Find Part PC: Collect computer parts by exploring
+- Rakit PC: Assemble the parts (mini-puzzle)
+
+**States**:
+- `EGameState.eFindPartPC`
+- `EGameState.eRakitPC` (follows FindPartPC)
+
+**Quest Format Integration**:
+```csharp
+// Quest format spawns parts:
+format = "part-pc_0,0,0_0,0,0 part-pc_2,0,3_0,0,0"
+
+// This spawns 2 PC part triggers at different locations
+```
+
+#### 🍽️ Warteg Minigame (WartegState)
+
+**Purpose**: Order and prepare food in a food stall.
+
+**State**: `EGameState.eWarteg`
+
+**Mechanics**: Timed cooking; UI for orders.
+
+#### 📖 Tarot & Book (TarotState, BookState)
+
+**Purpose**: Collect tarot cards or read story books.
+
+**States**:
+- `EGameState.eTarot` — Tarot system (divination cards)
+- `EGameState.eBook` — Book reading
+
+**Data**: Tarot and book content from ScriptableObjects.
+
+#### 🛏️ HP (Home Point) UI (HpState)
+
+**Purpose**: Player home UI; access tarot, inventory, chats, sleep.
+
+**State**: `EGameState.eHp`
+
+**Sub-panels**:
+- Tarot book access
+- Inventory display
+- WA chat (DoniChatWA)
+- Sleep (NextDayState transition)
+
+---
+
+## 📊 Data-Driven Architecture Deep Dive
+
+
+Indekos uses **ScriptableObjects** to decouple gameplay logic from content. Understanding the data layer is crucial for content creators and programmers.
+
+### ScriptableObject Hierarchy
+
+```
+indekos/data/
+├── quest/
+│   ├── QuestListDay1.asset  → Quest SO → List<QuestContent>
+│   ├── QuestListDay2.asset
+│   └── QuestListDay3.asset
+├── audio/
+│   ├── BGM.asset            → BGM definitions per scene
+│   ├── SFX.asset            → Sound effects
+│   ├── DataGuitar.asset     → Guitar chord clips
+│   └── GuitarFinalData.asset
+├── dialogue/
+│   ├── story_day1.asset     → Story conversations
+│   ├── study_day1.asset     → Study dialogue + answers
+│   └── chitchat_doni.asset  → Optional NPC chats
+├── substate/
+│   ├── GameplayStateScriptableObject.asset
+│   └── StudyStateScriptableObject.asset
+├── tarot/
+│   └── TarotBook.asset      → Tarot card definitions + descriptions
+├── iventory/ (typo in folder)
+│   └── Inventory.asset      → Item definitions
+├── beatmap/
+│   └── BeatmapData.asset    → Rhythm game patterns
+├── minimap/
+│   └── MiniMapTexture.asset → Minimap render texture
+├── loading/
+│   └── LoadingScreen.asset
+└── input/
+    └── InputMapping.asset   → Unity Input System actions
+```
+
+### Quest ScriptableObject Data Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ QuestListDay1.asset (Inspector)                                 │
+│                                                                 │
+│ Quest SO (List<QuestContent>):                                  │
+│ ├─ [0] Enter: "skip", Goal: "Wake up", Exit: "skip"            │
+│ ├─ [1] Enter: "eGameplay", Goal: "Go to campus", Exit: "none"  │
+│ ├─ [2] Enter: "kos_scene", Goal: "Study", Exit: "minigame..."  │
+│ └─ ...                                                          │
+└─────────────────────────────────────────────────────────────────┘
+           ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ QuestManager Runtime                                            │
+│                                                                 │
+│ mainQuest = ScriptableObject.CreateInstance<Quest>()            │
+│ mainQuest.content = [Deep Copy of asset's content]              │
+│ indexMainQuest = 0                                              │
+│                                                                 │
+│ EnterQuest() checks content[indexMainQuest].Enter               │
+│ NextQuest() increments indexMainQuest, calls Format()           │
+│ Format() spawns prefabs based on content[].format               │
+│ ExitQuest() switches state/minigame based on content[].Exit     │
+└─────────────────────────────────────────────────────────────────┘
+           ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ Save/Load (SaveData)                                            │
+│                                                                 │
+│ Persists: indexMainQuest, do_quest_list[], tarot[], inventory[]│
+│ On Load: Restores QuestManager state from SaveData              │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Key Data Bindings
+
+| System | ScriptableObject | Binding Mechanism | Runtime Container |
+|--------|------------------|-------------------|-------------------|
+| **Quest** | QuestListDayX.asset | QuestManager.quest_list[day] | QuestManager.mainQuest |
+| **BGM/SFX** | BGM.asset, SFX.asset | AudioManager (Dictionary lookup) | AudioManager.bgm, sfx |
+| **Dialogue** | Story/Study/ChitChat conversations | Managers (GetChild(index)) | AC.Conversation active instance |
+| **Input** | InputMapping.asset | InputManager (Input System activation) | Input.actions per state |
+| **Tarot** | TarotBook.asset | GameManager (GetTarot()) | GameManager.inventory_data |
+| **Inventory** | Inventory.asset | GameManager (GetInventoryData()) | GameManager.inventory_data |
+| **SubState Data** | GameplayStateScriptableObject.asset | GameManager (GetSubstateData<T>()) | Runtime substate instance |
+
+### Adding New Data-Driven Content
+
+**Example: Adding a New BGM Track**
+
+```csharp
+// 1. In AudioManager.cs, BGM SO is already serialized
+[SerializeField] private BGM bgm;
+
+// 2. In data/audio/BGM.asset, add a new entry:
+// BGM Content List:
+// ├─ [0] sceneName: "kos_scene", clip: kos_ambience.wav
+// ├─ [1] sceneName: "kampus_scene", clip: kampus_ambience.wav
+// └─ [2] sceneName: "warteg_scene", clip: warteg_ambience.wav (NEW)
+
+// 3. In code, when loading a scene:
+audio_manager.PlayBGM(level_manager.GetCurrentLevel()); // Looks up the clip
+```
+
+**Example: Adding a New Tarot Card**
+
+```csharp
+// 1. In TarotBook.asset, add to the Content list:
+// ├─ [0] ID: 1, Name: "The Magician", Meaning: "..."
+// └─ [1] ID: 2, Name: "The High Priestess", Meaning: "..." (NEW)
+
+// 2. In code, when player collects it:
+game_manager.GetTarot().Add(new TarotContent { id = 2, name = "The High Priestess" });
+
+// 3. On save/load:
+// SaveData.tarot[] persists the collected cards
+```
+
+---
+
+## ⚡ Performance & Scalability Analysis
+
+
+As Indekos grows, understanding performance bottlenecks and scalability risks is critical.
+
+### Current Bottlenecks
+
+#### 1. Singleton Manager Proliferation
+
+**Issue**: Every new feature adds a new singleton manager.
+- 12+ managers already (GameManager, QuestManager, LevelManager, UIManager, InputManager, AudioManager, etc.)
+- Each manager holds references to others, creating a complex dependency graph
+- Adding manager 13+ requires updating multiple Start() methods in other managers
+
+**Risk**: Circular dependencies or null reference errors if startup order changes.
+
+**Recommendation**:
+- Implement a **ServiceLocator** pattern to replace direct Instance access:
+  
+```csharp
+  public class ServiceLocator
+  {
+      private static Dictionary<System.Type, MonoBehaviour> services = new();
+      
+      public static T GetService<T>() where T : MonoBehaviour
+      {
+          return (T)services[typeof(T)];
+      }
+  }
+  
+```
+- Register managers in a single InitializeServices() method instead of scattered Start() calls
+
+#### 2. Quest Format String Parsing
+
+**Issue**: `QuestManager.Format()` parses a complex format string every time a quest is entered.
+- String splitting and regex can be slow
+- No caching; reparsed on quest re-entry
+
+**Risk**: Noticeable lag when entering a quest with 10+ spawned components.
+
+**Recommendation**:
+```csharp
+// Cache parsed format data
+private Dictionary<string, ParsedFormat> formatCache = new();
+
+public void Format()
+{
+    string format = mainQuest.content[indexMainQuest].format;
+    
+    if (!formatCache.ContainsKey(format))
+    {
+        formatCache[format] = ParseFormat(format);
+    }
+    
+    ApplyFormat(formatCache[format]);
+}
+```
+
+#### 3. Dictionary Serialization Overhead
+
+**Issue**: SaveData uses wrapper lists (QuestDictWrapper, etc.) to serialize dictionaries.
+- Verbose JSON files (20-30% larger than necessary)
+- Conversion on every save/load
+
+**Risk**: Large save files; slower I/O on mobile devices.
+
+**Recommendation**: Use Newtonsoft.Json which natively handles dictionaries.
+
+#### 4. Dialogue Indexing by GetChild()
+
+**Issue**: StudyManager and StoryManager use `GetChild(dayIndex).GetChild(questIndex)` to find conversations.
+- O(n) lookup per dialogue access
+- Brittle if hierarchy changes
+
+**Recommendation**:
+```csharp
+// Cache dialogue by day + index on Start()
+private Dictionary<(int, int), AC.Conversation> dialogueCache = new();
+
+private void CacheDialogues()
+{
+    for (int day = 0; day < days.Count; day++)
+    {
+        for (int i = 0; i < days[day].ChildCount; i++)
+        {
+            dialogueCache[(day, i)] = days[day].GetChild(i).GetComponent<AC.Conversation>();
+        }
+    }
+}
+```
+
+### Scalability Risks
+
+#### Multiplayer (If Future Feature)
+
+**Risk**: State machine is single-player only.
+- GameManager assumes one player
+- All state transitions are global
+- No concept of player-specific UI or input
+
+**Recommendation**: Introduce PlayerController wrapper that each player instance owns.
+
+#### Mobile Performance
+
+**Risk**: Current implementation assumes desktop/console performance.
+- Many managers running Update() every frame
+- Large dictionaries in memory
+- No object pooling for minigame objects
+
+**Recommendation**:
+- Implement pooling for frequently-spawned objects (triggers, NPCs)
+- Lazy-load ScriptableObjects (don't load all day quests at startup)
+- Profile on target hardware
+
+#### Content Scaling
+
+**Risk**: As quest content grows, quest data files become monolithic.
+- QuestListDay1.asset could have 100+ quest entries
+- No filtering or pagination
+
+**Recommendation**:
+- Split large Quest SOs by story arc or phase
+- Implement QuestContentFilter to only load relevant quests
+
+---
+
+## 🕐 Advanced Time & Day System Deep Dive
+
+
+Indekos uses a **day-based progression** system where the player advances through days, times, and story beats. Understanding this system is critical for quest design and state management.
+
+### DateTimeManager Architecture
+
+```csharp
+public class DateTimeManager : singleton<DateTimeManager>, DateTimeManagerInterface
+{
+    // In-game date
+    private int currentDay;    // 0 = Day 1, 1 = Day 2, etc.
+    private ETime currentTime; // Morning, Afternoon, Evening, Night
+    private string dayName;    // "Monday", "Tuesday", etc.
+    private int dayOfMonth;    // 1-31
+    private string month;      // "AUG", "SEPT", etc.
+    
+    public void NextDay() { /* ... */ }
+    public void SetTime(ETime time) { /* ... */ }
+    public datetime GetCurrentDateTime() { /* ... */ }
+}
+
+[System.Serializable]
+public enum ETime
+{
+    eMorning = 0,
+    eAfternoon = 1,
+    eEvening = 2,
+    eNight = 3
+}
+
+[System.Serializable]
+public struct datetime
+{
+    public ETime etime;
+    public DateValues date;
+}
+
+[System.Serializable]
+public struct DateValues
+{
+    public string days;     // "Monday"
+    public int day;         // 1
+    public string month;    // "AUG"
+}
+```
+
+### Day Progression Flow
+
+```
+Day 1 (Monday, Aug 1)
+├─ Morning: Quest 0-5 (Wake up, breakfast, go to campus)
+├─ Afternoon: Quest 6-10 (Classes, lunch)
+├─ Evening: Quest 11-15 (Study, dinner)
+└─ Night: Quest 16-18 (Sleep, next day)
+    │
+    └─► NextDayState triggered
+        │
+        └─► QuestManager.QuestNexDay()
+            • do_quest_list.Clear()
+            • Load QuestListDay2
+            • indexMainQuest = 0
+            │
+            └─► Day 2 (Tuesday, Aug 2) starts
+```
+
+### Quest Time Binding
+
+Each quest has a **time** field that determines when it should occur:
+
+```csharp
+[System.Serializable]
+public class QuestContent
+{
+    public datetime time;  // When this quest occurs
+    // ...
+}
+
+// Example:
+QuestContent quest = new QuestContent
+{
+    time = new datetime
+    {
+        etime = ETime.eMorning,
+        date = { days = "Monday", day = 1, month = "AUG" }
+    }
+};
+```
+
+### Time-Based UI Updates
+
+The UIManager updates the objective panel to show:
+- Current date (Monday, Aug 1)
+- Current time (Morning)
+- Current quest goal
+
+```csharp
+public void UpdateDateUi()
+{
+    datetime current = datetime_manager.GetCurrentDateTime();
+    // Update AC menu with date/time display
+    
+    MenuElement dateElement = menu.GetElement("date_display");
+    dateElement.Label = $"{current.date.days}, {current.date.month} {current.date.day}";
+    
+    MenuElement timeElement = menu.GetElement("time_display");
+    timeElement.Label = current.etime.ToString(); // "Morning", "Afternoon", etc.
+}
+
+public void UpdateObjectiveUi()
+{
+    string goal = quest_manager.GetGoalQuest();
+    MenuElement objectiveElement = menu.GetElement("objective_display");
+    objectiveElement.Label = goal;
+}
+```
+
+### Day Progression Conditions
+
+Quests can transition to NextDayState when:
+
+1. **Quest Exit is "skip"** — Automatically advance
+2. **All quests for the day are completed** — Manual sleep trigger
+3. **Player interacts with sleep trigger** — Explicit transition
+
+```csharp
+// Example: Sleep trigger in HP
+public class TriggerSleep : TriggerManager
+{
+    protected override void Enter()
+    {
+        game_manager.GetGameState().ChangeState(EGameState.eNextDay);
+    }
+}
+
+// NextDayState
+public class NextDayState : stateinterface
+{
+    public void Enter()
+    {
+        // Show day transition screen
+        ui_manager.ShowUI("next_day_screen");
+        
+        // Advance to next day
+        datetime_manager.NextDay();
+        
+        // Reset quests for the new day
+        quest_manager.QuestNexDay();
+        
+        // After delay, return to gameplay
+        StartCoroutine(WaitThenReturnToGameplay());
+    }
+}
+```
+
+### Persisting Day State
+
+SaveData stores:
+```csharp
+[System.Serializable]
+public class SaveData
+{
+    public int indexDay;              // Current day (0 = Day 1)
+    public int indexQuest;            // Current quest in day
+    public datetime time;             // Current time
+    public List<string> do_quest_list; // Completed quest IDs for today
+}
+```
+
+When loading a save:
+1. DateTimeManager restored to saved time
+2. QuestManager restored to saved quest index
+3. do_quest_list restored so quest enters don't re-trigger
+
+---
+
+## 🔎 Complete Example: Extending Indekos with a New Story Arc
+
+
+This comprehensive example walks through adding a complete new story arc: "The Guitar Competition" (Days 5-7).
+
+### Step 1: Design the Quest Content
+
+Create `QuestListDay5.asset`:
+
+```
+Day 5 Quests:
+├─ [0] Enter: "skip", Goal: "Wake up", Exit: "skip"
+├─ [1] Enter: "eGameplay", Goal: "Go to the music room", Exit: "none"
+│      Format: "trigger-input_0,0,0_0,0,0_music_room_entrance"
+├─ [2] Enter: "level-music_room", Goal: "Talk to the instructor", Exit: "story-quest"
+│      Format: "npc-instructor_5,0,0_0,180,0 trigger-input_8,0,0_0,0,0_competition_sign_up"
+├─ [3] Enter: "chitchat-instructor", Goal: "Return to campus", Exit: "minigame-guitar"
+│      (Story dialogue triggers this exit)
+└─ [4] Enter: "eGameplay", Goal: "Practice more at home", Exit: "none"
+```
+
+### Step 2: Create Story Dialogue
+
+Create `story_day5_guitar.asset` (AC Conversations):
+
+```
+Conversation 1: "Instructor Greeting"
+├─ NPC: Instructor
+├─ Line 1: "Ah, you're interested in the competition?"
+├─ Line 2: "Show me what you can do."
+└─ Requires DialogueOption to proceed
+
+Conversation 2: "Competition Rules"
+├─ Triggered by quest index 3
+├─ Explains competition format
+└─ Leads to minigame-guitar exit
+```
+
+### Step 3: Register in DialogueManager
+
+In `StoryManager.cs`:
+
+```csharp
+// Pseudo-code for story registration
+public void ResumeStory(EStoryType type)
+{
+    if (datetime_manager.GetCurrentDay() == 4) // Day 5 (0-indexed)
+    {
+        if (type == EStoryType.eIncludeQuest)
+        {
+            // Load day 5 story conversations
+            currentStory = GetStory("story_day5_guitar");
+            currentStory.Play(); // AC plays the conversation
+        }
+    }
+}
+```
+
+### Step 4: Setup Guitar Minigame Exit
+
+In `GuitarState.cs`:
+
+```csharp
+public void Update()
+{
+    // ... guitar game logic ...
+    
+    if (PlayerPassedExam())
+    {
+        // Win condition
+        quest_manager.NextQuest(); // Advance to quest [4]
+        game_manager.GetGameState().ChangeState(EGameState.eGameplay);
+    }
+}
+```
+
+### Step 5: Save/Load Persistence
+
+SaveData automatically handles:
+- `indexDay = 4` (Day 5, 0-indexed)
+- `indexQuest = 3` (Currently on quest 3)
+- `time = morning` (Time of day)
+- `do_quest_list` = ["day5_quest_0", "day5_quest_1", "day5_quest_2"] (Completed quests)
+
+On load:
+1. QuestManager restores `indexQuest = 3`
+2. QuestContent[3] is loaded
+3. Story dialogue can resume from the right point
+
+---
+
+## 🛠️ Testing & Debugging Guide
+
+
+### Using CheatManager
+
+CheatManager provides quick access to story progression for testing:
+
+```csharp
+// Enable cheat mode
+private bool bIsActive; // Set to true in editor
+
+// Keypad keys jump to specific quest points:
+// Keypad0: Jump to Day 3, Quest 27
+// Keypad1: Jump to Day 5, Quest specific point
+// etc.
+
+// Use it to test:
+// 1. Specific story beats
+// 2. Minigame transitions
+// 3. Save/Load integrity
+// 4. Quest time binding
+```
+
+### Debugging Quest Transitions
+
+In `QuestManager.cs`, add logging:
+
+```csharp
+public void EnterQuest()
+{
+    Debug.Log($"[QUEST] Entering Day {datetime_manager.GetCurrentDay()}, Quest {indexMainQuest}");
+    Debug.Log($"[QUEST] Enter condition: {mainQuest.content[indexMainQuest].Enter}");
+    
+    // ... rest of logic ...
+}
+
+public void ExitQuest()
+{
+    Debug.Log($"[QUEST] Exiting quest {indexMainQuest}");
+    Debug.Log($"[QUEST] Exit action: {mainQuest.content[indexMainQuest].Exit}");
+    
+    // ... rest of logic ...
+}
+```
+
+### Testing Scene Loading
+
+Verify that LevelManager loading sequence:
+1. Shows loading UI
+2. Unloads old scene
+3. Loads new scene additively
+4. Updates player position
+5. Calls EnterQuest()
+6. Hides loading UI
+
+```csharp
+// In inspector, set breakpoints at each step
+// Or add logging in LevelManager.LoadLevel() and WaitLoading coroutine
+```
+
+---
+
+## 📋 Refactoring Roadmap for Production
+
+> **🛠 Refactor Suggestion**
+
+For production release, consider these architectural improvements:
+
+1. **Event Bus for Loose Coupling**
+   - Replace direct manager calls with event broadcasting
+   - Reduces manager dependency graph complexity
+   - Example: `EventBus.Publish<QuestCompletedEvent>(questId)`
+
+2. **Quest Format DSL (Domain Specific Language)**
+   - Replace string parsing with a structured grammar
+   - Example: YAML or JSON quest format with validation
+   - Better error detection and content creation UX
+
+3. **ComponentManager Pool Optimization**
+   - Use object pooling for frequently spawned/despawned triggers
+   - Reduces GC allocations during quests
+
+4. **Save System Compression**
+   - Compress encrypted save files to reduce I/O
+   - Especially important for mobile devices
+
+5. **Dialogue Caching Improvements**
+   - Pre-cache all day dialogues on startup instead of lazy-loading
+   - Eliminates stutter when first dialogue of a day is triggered
+
+---
+
 ## 🎓 New Developer Onboarding Guide
 
-> **🔎 Added Documentation**
 
 This section is a practical quick-start for developers new to the Indekos codebase. It assumes familiarity with Unity C# development and provides step-by-step guides for the most common tasks.
 
@@ -2035,7 +2874,6 @@ public void Enter()
 
 ## 🎮 Minigame System Architecture Deep Dive
 
-> **🔎 Added Documentation**
 
 Indekos includes 9+ minigames, each implemented as a separate **State** with its own Enter/Update/Exit lifecycle. Understanding the minigame pattern is critical for extending the system.
 
@@ -2249,7 +3087,6 @@ format = "part-pc_0,0,0_0,0,0 part-pc_2,0,3_0,0,0"
 
 ## 📊 Data-Driven Architecture Deep Dive
 
-> **🔎 Added Documentation**
 
 Indekos uses **ScriptableObjects** to decouple gameplay logic from content. Understanding the data layer is crucial for content creators and programmers.
 
@@ -2369,7 +3206,6 @@ game_manager.GetTarot().Add(new TarotContent { id = 2, name = "The High Priestes
 
 ## ⚡ Performance & Scalability Analysis
 
-> **🔎 Added Documentation**
 
 As Indekos grows, understanding performance bottlenecks and scalability risks is critical.
 
@@ -2495,7 +3331,6 @@ private void CacheDialogues()
 
 ## 🕐 Advanced Time & Day System Deep Dive
 
-> **🔎 Added Documentation**
 
 Indekos uses a **day-based progression** system where the player advances through days, times, and story beats. Understanding this system is critical for quest design and state management.
 
@@ -2672,7 +3507,6 @@ When loading a save:
 
 ## 🔎 Complete Example: Extending Indekos with a New Story Arc
 
-> **🔎 Added Documentation**
 
 This comprehensive example walks through adding a complete new story arc: "The Guitar Competition" (Days 5-7).
 
@@ -2764,7 +3598,6 @@ On load:
 
 ## 🛠️ Testing & Debugging Guide
 
-> **🔎 Added Documentation**
 
 ### Using CheatManager
 
